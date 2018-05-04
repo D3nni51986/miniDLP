@@ -1,41 +1,59 @@
 package actors
 
-import akka.actor.{Actor, Props}
-import models._
+import akka.actor.{Actor, ActorSystem, Props}
+import akka.http.scaladsl.model.HttpEntity
+import akka.pattern.pipe
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
+import models.{ScanServiceInputContext, _}
 import scan.ScanOperations
+import support.JsonSupport
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object Scanner{
-  def apply():Props = Props(new Scanner())
+  def apply(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer):Props = Props(new Scanner())
 }
 
-class Scanner() extends ScannerWorker {
+class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer)
+  extends ScannerWorker
+    with JsonSupport{
 
   val validations = List[String => ScanResult](
     ScanOperations.checkCreditCard,
     ScanOperations.checkSocialSecurity)
 
   override def receive: Receive = {
-    case ScanServiceInput(input) => scanInput(input.toLowerCase())
-    case _                       => ScanServiceResult(List("Incorrect service call"))
+    case HandleRequest(ctx)        => extractRequest(ctx)
+    case s:ScanServiceInputContext => completeSession(s)
+    case _                         => ScanServiceResult("" , List("Incorrect service call"))
   }
-}
 
-trait ScannerOps {
-  val validations:List[String => ScanResult]
-}
+  def completeSession(inputCtx:ScanServiceInputContext) = {
+    try{
+      val scanResult    = scan(inputCtx.input.input.toLowerCase())
+      val comleteResult = returnScanResult(inputCtx, scanResult)
+      inputCtx.ctx.complete(comleteResult)
+      context.stop(self)
+    }
+    catch{
+      case t:Throwable =>
+        inputCtx.ctx.fail(t)
+        context.stop(self)
+    }
+  }
 
-abstract class ScannerWorker() extends Actor with ScannerOps{
-  protected def scanInput(input:String) = {
-    val scanResultList = validations
-      .map(_(input.toLowerCase))
-      .collect{
-        case s:SocialSecurityNumberScanResult => s"Sensetive Social Security Number => ${s.target.getOrElse("")} has been detected"
-        case c:CreditCardNumberScanResult     => s"Sensetive Credit Card Number => ${c.target.getOrElse("")} has been detected"
-      }
+  def extractRequest(ctx:ImperativeRequestContext) = {
+    val f = Unmarshal(ctx.request.entity).to[ScanServiceInput].map{
+      case s:ScanServiceInput => ScanServiceInputContext(s, ctx)
+    }
+    pipe(f) to self
+  }
 
-    scanResultList.nonEmpty match {
-      case true  => ScanServiceResult(scanResultList)
-      case false => ScanServiceResult(List("Clean input"))
+  override def returnScanResult(ctx:ScanServiceInputContext, validationResult: List[String]) = {
+    validationResult.nonEmpty match {
+      case true  => ScanServiceResult(ctx.input.id, validationResult)
+      case false => ScanServiceResult(ctx.input.id, List("Clean input"))
     }
   }
 }
