@@ -9,7 +9,7 @@ import route.ImperativeRequestContext
 import scan.ScanOperations
 import support.JsonSupport
 
-import scala.concurrent.{ExecutionContext}
+import scala.concurrent.ExecutionContext
 import scala.io.Source
 
 object ScanService{
@@ -17,14 +17,14 @@ object ScanService{
 }
 
 class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer)
-  extends ScannerWorker
+  extends Worker
     with JsonSupport{
 
   val validations = List[String => ScanResult](
     ScanOperations.checkCreditCard,
     ScanOperations.checkSocialSecurity)
 
-  override def receive: Receive = {
+  def receive: Receive = {
     case HandleScanRequest(ctx)     => extractScanRequest(ctx)
     case HandleScanFileRequest(ctx) => extractScanFileRequest(ctx)
     case s:ScanServiceInputContext  => completeSession(s, scanResult(s))

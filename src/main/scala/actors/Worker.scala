@@ -4,7 +4,7 @@ import akka.actor.Actor
 import models._
 import scan.ScanOperations.ScannerOps
 
-abstract class ScannerWorker() extends Actor with ScannerOps{
+abstract class Worker() extends Actor with ScannerOps{
 
   def scan(input:String):List[String] = {
     validations.map(_(input)).collect{
