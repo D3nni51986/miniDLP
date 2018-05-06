@@ -37,7 +37,8 @@ class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializ
   }
 
   def completeSession(inputCtx:ScanServiceInputContext, scanServiceResult:ScanServiceResult) = {
-    inputCtx.ctx.complete(scanServiceResult)
+    val scanServiceResult = scan(inputCtx.input.input.toLowerCase())
+    inputCtx.ctx.complete(returnScanResult(inputCtx, scanServiceResult))
     context.stop(self)
   }
 
