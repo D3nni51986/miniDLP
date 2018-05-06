@@ -6,6 +6,7 @@ import akka.pattern.pipe
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import models.{ScanServiceInputContext, _}
+import route.ImperativeRequestContext
 import scan.ScanOperations
 import support.JsonSupport
 
@@ -55,9 +56,9 @@ class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: 
 
   def extractScanFileRequest(ctx:ImperativeRequestContext) = {
     val f = Unmarshal(ctx.request.entity).to[ScanFileRequest].map{
-      case s:ScanFileRequest  =>
-        val input = Source.fromFile(s.filePath).getLines.mkString
-        ScanServiceInputContext(ScanServiceInput(s.id, input), ctx)
+      case sf:ScanFileRequest  =>
+        val input = Source.fromFile(sf.filePath).getLines.mkString
+        ScanServiceInputContext(ScanServiceInput(sf.id, input), ctx)
       case _                  => throw new Exception
     }
     pipe(f) to self
