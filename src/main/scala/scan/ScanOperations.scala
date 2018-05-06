@@ -16,8 +16,9 @@ object ScanOperations {
   def checkCreditCard(input:String):CreditCardNumberScanResult = {
     regexMach(SecurityConsts.creditCardRegexList, input) match {
       case Some(creditCardNumber)
-        if contextKeyordsValidation(SecurityConsts.CreditCardNumberContextsKeywords, input) => CreditCardNumberScanResult(Some(creditCardNumber))
-      case _                                                                                => CreditCardNumberScanResult(None)
+        if contextKeyordsValidation(SecurityConsts.CreditCardNumberContextsKeywords, input)
+          && luhnValidation(creditCardNumber.reverse) => CreditCardNumberScanResult(Some(creditCardNumber))
+      case _                                          => CreditCardNumberScanResult(None)
     }
   }
 
@@ -37,7 +38,11 @@ object ScanOperations {
     regex.findFirstIn(input)
   }
 
-  def luhnValidation(input:String) = {
 
+  def luhnValidation(reversedInput:String) = {
+    var toDouble = true
+    reversedInput.foldLeft(0){ (a,b) =>
+      toDouble = !toDouble; if (toDouble) { a + luhnMap( b - '0'.toInt)} else{a +  b - '0'.toInt}} % 10 == 0
   }
+
 }

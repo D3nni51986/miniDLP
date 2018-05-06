@@ -25,4 +25,6 @@ object SecurityConsts {
     """(\d\d\d\d)-(\d\d\d\d)-(\d\d\d\d)-(\d\d\d\d)""",
     """(\d\d\d\d) (\d\d\d\d) (\d\d\d\d) (\d\d\d\d)""")
     .foldLeft("")((a, b) => a + "|"  + b).drop(1).r
+
+  val luhnMap = Map[Int,Int](1 -> 2, 2 -> 4, 3 -> 6, 4 -> 8, 5 -> 1, 6 -> 3, 7 -> 5, 8 -> 7, 9 -> 9, 0 -> 0)
 }
