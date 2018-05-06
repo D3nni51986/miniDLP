@@ -9,3 +9,4 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val scanServiceResultFormat = jsonFormat2(ScanServiceResult)
   implicit val scanFileFormat = jsonFormat2(ScanFileRequest)
 }
+
