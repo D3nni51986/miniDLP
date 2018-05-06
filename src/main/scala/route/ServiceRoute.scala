@@ -1,13 +1,11 @@
 package route
 
-import actors.Scanner
+import actors.{ScanService}
 import akka.actor.ActorSystem
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import models._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive1, RequestContext, Route, RouteResult}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.http.scaladsl.server.{RequestContext, Route, RouteResult}
+import akka.stream.ActorMaterializer
 
 import scala.concurrent.{ExecutionContext, Promise}
 
@@ -22,7 +20,7 @@ trait ServiceRoute {
       pathEndOrSingleSlash {
         post {
           imperativelyComplete { ctx =>
-            system.actorOf(Scanner(ec, system, materializer)) ! HandleScanRequest(ctx)
+            system.actorOf(ScanService(ec, system, materializer)) ! HandleScanRequest(ctx)
           }
         }
       }
@@ -30,7 +28,7 @@ trait ServiceRoute {
       pathEndOrSingleSlash {
         post {
           imperativelyComplete { ctx =>
-            system.actorOf(Scanner(ec, system, materializer)) ! HandleScanFileRequest(ctx)
+            system.actorOf(ScanService(ec, system, materializer)) ! HandleScanFileRequest(ctx)
           }
         }
       }

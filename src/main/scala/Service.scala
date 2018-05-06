@@ -1,10 +1,7 @@
-import actors.Scanner
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import route.ServiceRoute
-
-import scala.io.StdIn
 
 object Service extends App with ServiceRoute{
 
@@ -14,10 +11,4 @@ object Service extends App with ServiceRoute{
 
   Http().bindAndHandle(route, "localhost", 8080)
 
-  println("Type Q to terminate")
-  val read = StdIn.readLine()
-  println(read)
-  if (read == "q"){
-    system.terminate()
-  }
 }

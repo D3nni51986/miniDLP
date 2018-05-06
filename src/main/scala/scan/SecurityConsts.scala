@@ -3,7 +3,8 @@ package scan
 object SecurityConsts {
 
   val SocialSecurityContextKeywords = Set[String]("Social", "Security", "Social Security#",
-    "Soc Sec", "SSN", "SSNS", "SSN#", "SS#", "SSID").map(_.toLowerCase)
+    "Soc Sec", "SSN", "SSNS", "SSN#", "SS#", "SSID")
+    .map(_.toLowerCase)
 
   val CreditCardNumberContextsKeywords = Set[String]("amex", "american express", "americanexpress", "Visa, mastercard", "master card", "mc", "mastercards", "master cards", "diner's Club", "diners club",
     "dinersclub", "discover card", "discovercard", "discover cards", "carte blanche",
@@ -14,7 +15,8 @@ object SecurityConsts {
     "kartennummer", "kreditkartennummer", "kreditkarten-nummer", "carta di credito", "carta credito", "numero carta", "numero della carta", "numero di carta",
     "cartão de crédito", "cartão de credito", "cartao de crédito", "cartao de credito", "cartão de débito", "cartao de débito", "cartão de debito", "cartao de debito",
     "débito automático", "debito automatico", "número do cartão",
-    "numero do cartão", "número do cartao", "numero do cartao", "número de cartão", "numero de cartão", "número de cartao", "numero de cartao").map(_.toLowerCase)
+    "numero do cartão", "número do cartao", "numero do cartao", "número de cartão", "numero de cartão", "número de cartao", "numero de cartao")
+    .map(_.toLowerCase)
 
   val socialSecurityRegexList = List("""(\d\d\d\d\d\d\d\d\d)""",
     """(\d\d\d)-(\d\d)-(\d\d\d\d)""",

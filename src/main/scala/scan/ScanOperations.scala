@@ -15,34 +15,42 @@ object ScanOperations {
 
   def checkCreditCard(input:String):CreditCardNumberScanResult = {
     regexMach(SecurityConsts.creditCardRegexList, input) match {
-      case Some(creditCardNumber)
-        if contextKeyordsValidation(SecurityConsts.CreditCardNumberContextsKeywords, input)
-          && luhnValidation(creditCardCleanRegex.replaceAllIn(creditCardNumber, "").reverse) => CreditCardNumberScanResult(Some(creditCardNumber))
-      case _                                          => CreditCardNumberScanResult(None)
+      case creditCardNumbers:List[String]  =>
+        val findCreditCard = checkAllCreditCards(creditCardNumbers, input)
+        CreditCardNumberScanResult(findCreditCard)
+      case _                               => CreditCardNumberScanResult(None)
     }
   }
 
   def checkSocialSecurity(input:String):SocialSecurityNumberScanResult = {
     regexMach(socialSecurityRegexList, input) match {
-      case Some(socialSecurityNumber)
-        if contextKeyordsValidation(SecurityConsts.SocialSecurityContextKeywords, input) => SocialSecurityNumberScanResult(Some(socialSecurityNumber))
-      case _                                                                             => SocialSecurityNumberScanResult(None)
+      case socialSecurityNumbers:List[String] =>
+        val findSocialNumber = checkAllSocialSecurityNumbers(socialSecurityNumbers, input)
+        SocialSecurityNumberScanResult(findSocialNumber)
+      case _                                  => SocialSecurityNumberScanResult(None)
     }
   }
 
-  def contextKeyordsValidation(keywords:Set[String], input:String) = {
+  private def checkAllCreditCards(creditCardNumbers:List[String], input:String) = {
+    creditCardNumbers.find(cc => contextKeyordsValidation(SecurityConsts.CreditCardNumberContextsKeywords, input)
+      && luhnValidation(creditCardCleanRegex.replaceAllIn(cc, "").reverse))
+  }
+
+  private def checkAllSocialSecurityNumbers(socialSecurityNumbers:List[String], input:String):Option[String] = {
+    socialSecurityNumbers.find(ss => contextKeyordsValidation(SecurityConsts.SocialSecurityContextKeywords, input))
+  }
+
+  private def contextKeyordsValidation(keywords:Set[String], input:String) = {
     keywords.exists(input.contains(_))
   }
 
-  def regexMach(regex:Regex, input:String) = {
-    regex.findFirstIn(input)
+  private def regexMach(regex:Regex, input:String) = {
+    regex.findAllIn(input).toList
   }
-
 
   def luhnValidation(reversedInput:String) = {
     var toDouble = true
     reversedInput.foldLeft(0){ (a,b) =>
       toDouble = !toDouble; if (toDouble) { a + luhnMap( b - '0'.toInt)} else{a +  b - '0'.toInt}} % 10 == 0
   }
-
 }

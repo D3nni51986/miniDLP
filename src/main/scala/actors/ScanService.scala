@@ -1,7 +1,6 @@
 package actors
 
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.http.scaladsl.model.HttpEntity
+import akka.actor.{ActorSystem, Props}
 import akka.pattern.pipe
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
@@ -10,14 +9,14 @@ import route.ImperativeRequestContext
 import scan.ScanOperations
 import support.JsonSupport
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext}
 import scala.io.Source
 
-object Scanner{
-  def apply(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer):Props = Props(new Scanner())
+object ScanService{
+  def apply(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer):Props = Props(new ScanService())
 }
 
-class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer)
+class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer)
   extends ScannerWorker
     with JsonSupport{
 
@@ -28,28 +27,23 @@ class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: 
   override def receive: Receive = {
     case HandleScanRequest(ctx)     => extractScanRequest(ctx)
     case HandleScanFileRequest(ctx) => extractScanFileRequest(ctx)
-    case s:ScanServiceInputContext  => completeSession(s)
+    case s:ScanServiceInputContext  => completeSession(s, scanResult(s))
     case _                          => ScanServiceResult("" , List("Incorrect service call"))
   }
 
-  def completeSession(inputCtx:ScanServiceInputContext) = {
-    try{
-      val scanResult    = scan(inputCtx.input.input.toLowerCase())
-      val comleteResult = returnScanResult(inputCtx, scanResult)
-      inputCtx.ctx.complete(comleteResult)
-      context.stop(self)
-    }
-    catch{
-      case t:Throwable =>
-        inputCtx.ctx.fail(t)
-        context.stop(self)
-    }
+  def scanResult(inputCtx:ScanServiceInputContext) = {
+    require(inputCtx.input.input.length <= 4000)
+    returnScanResult(inputCtx, scan(inputCtx.input.input.toLowerCase()))
+  }
+
+  def completeSession(inputCtx:ScanServiceInputContext, scanServiceResult:ScanServiceResult) = {
+    inputCtx.ctx.complete(scanServiceResult)
+    context.stop(self)
   }
 
   def extractScanRequest(ctx:ImperativeRequestContext) = {
     val f = Unmarshal(ctx.request.entity).to[ScanServiceInput].map{
       case s:ScanServiceInput => ScanServiceInputContext(s, ctx)
-      case _                  => throw new Exception
     }
     pipe(f) to self
   }
@@ -59,7 +53,6 @@ class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: 
       case sf:ScanFileRequest  =>
         val input = Source.fromFile(sf.filePath).getLines.mkString
         ScanServiceInputContext(ScanServiceInput(sf.id, input), ctx)
-      case _                  => throw new Exception
     }
     pipe(f) to self
   }
