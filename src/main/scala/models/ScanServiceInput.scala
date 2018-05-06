@@ -9,7 +9,10 @@ case class ScanServiceInput(id:String, input:String)
 case class ScanServiceInputContext(input:ScanServiceInput, ctx: ImperativeRequestContext)
 case class ScanServiceResult(id:String, resultList:List[String])
 
-case class HandleRequest(ctx: ImperativeRequestContext)
+case class ScanFileRequest(id:String, filePath:String)
+
+case class HandleScanRequest(ctx: ImperativeRequestContext)
+case class HandleScanFileRequest(ctx: ImperativeRequestContext)
 
 // an imperative wrapper for request context
 final class ImperativeRequestContext(ctx: RequestContext, promise: Promise[RouteResult]) {

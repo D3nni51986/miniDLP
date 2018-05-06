@@ -10,6 +10,7 @@ import scan.ScanOperations
 import support.JsonSupport
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 
 object Scanner{
   def apply(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer):Props = Props(new Scanner())
@@ -24,9 +25,10 @@ class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: 
     ScanOperations.checkSocialSecurity)
 
   override def receive: Receive = {
-    case HandleRequest(ctx)        => extractRequest(ctx)
-    case s:ScanServiceInputContext => completeSession(s)
-    case _                         => ScanServiceResult("" , List("Incorrect service call"))
+    case HandleScanRequest(ctx)     => extractScanRequest(ctx)
+    case HandleScanFileRequest(ctx) => extractScanFileRequest(ctx)
+    case s:ScanServiceInputContext  => completeSession(s)
+    case _                          => ScanServiceResult("" , List("Incorrect service call"))
   }
 
   def completeSession(inputCtx:ScanServiceInputContext) = {
@@ -43,9 +45,20 @@ class Scanner(implicit ec: ExecutionContext, system: ActorSystem, materializer: 
     }
   }
 
-  def extractRequest(ctx:ImperativeRequestContext) = {
+  def extractScanRequest(ctx:ImperativeRequestContext) = {
     val f = Unmarshal(ctx.request.entity).to[ScanServiceInput].map{
       case s:ScanServiceInput => ScanServiceInputContext(s, ctx)
+      case _                  => throw new Exception
+    }
+    pipe(f) to self
+  }
+
+  def extractScanFileRequest(ctx:ImperativeRequestContext) = {
+    val f = Unmarshal(ctx.request.entity).to[ScanFileRequest].map{
+      case s:ScanFileRequest  =>
+        val input = Source.fromFile(s.filePath).getLines.mkString
+        ScanServiceInputContext(ScanServiceInput(s.id, input), ctx)
+      case _                  => throw new Exception
     }
     pipe(f) to self
   }

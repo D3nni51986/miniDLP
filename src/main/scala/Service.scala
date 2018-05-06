@@ -14,7 +14,10 @@ object Service extends App with ServiceRoute{
 
   Http().bindAndHandle(route, "localhost", 8080)
 
-  println("ENTER to terminate")
-  StdIn.readLine()
-  system.terminate()
+  println("Type Q to terminate")
+  val read = StdIn.readLine()
+  println(read)
+  if (read == "q"){
+    system.terminate()
+  }
 }
