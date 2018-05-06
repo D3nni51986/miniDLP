@@ -17,7 +17,7 @@ object ScanOperations {
     regexMach(SecurityConsts.creditCardRegexList, input) match {
       case Some(creditCardNumber)
         if contextKeyordsValidation(SecurityConsts.CreditCardNumberContextsKeywords, input)
-          && luhnValidation(creditCardNumber.reverse) => CreditCardNumberScanResult(Some(creditCardNumber))
+          && luhnValidation(creditCardCleanRegex.replaceAllIn(creditCardNumber, "").reverse) => CreditCardNumberScanResult(Some(creditCardNumber))
       case _                                          => CreditCardNumberScanResult(None)
     }
   }
