@@ -1,7 +1,6 @@
 package actors
 
 import akka.actor.{ActorSystem, Props}
-import akka.pattern.pipe
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import models.{ScanServiceInputContext, _}
@@ -11,14 +10,16 @@ import support.JsonSupport
 
 import scala.concurrent.ExecutionContext
 import scala.io.Source
+import scala.util.{Failure, Success}
 
 object ScanService{
   def apply(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer):Props = Props(new ScanService())
 }
 
 class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializer: ActorMaterializer)
-  extends Worker
-    with JsonSupport{
+  extends Worker{
+
+  import JsonSupport._
 
   val validations = List[String => ScanResult](
     ScanOperations.checkCreditCard,
@@ -45,8 +46,10 @@ class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializ
   def extractScanRequest(ctx:ImperativeRequestContext) = {
     val f = Unmarshal(ctx.request.entity).to[ScanServiceInput].map{
       case s:ScanServiceInput => ScanServiceInputContext(s, ctx)
+    }.onComplete{
+      case Success(s) => self ! s
+      case Failure(f) => ctx.fail(f)
     }
-    pipe(f) to self
   }
 
   def extractScanFileRequest(ctx:ImperativeRequestContext) = {
@@ -54,8 +57,10 @@ class ScanService(implicit ec: ExecutionContext, system: ActorSystem, materializ
       case sf:ScanFileRequest  =>
         val input = Source.fromFile(sf.filePath).getLines.mkString
         ScanServiceInputContext(ScanServiceInput(sf.id, input), ctx)
+    }.onComplete{
+      case Success(s) => self ! s
+      case Failure(f) => ctx.fail(f)
     }
-    pipe(f) to self
   }
 
   override def returnScanResult(ctx:ScanServiceInputContext, validationResult: List[String]) = {
